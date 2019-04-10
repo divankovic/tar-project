@@ -1,3 +1,5 @@
-# TAR course project repository
+## TAR course project repository
 
-### Dataset link: [https://www.kaggle.com/aaron7sun/stocknews/discussion]
+Important links and instructions:
+- Dataset link: https://www.kaggle.com/aaron7sun/stocknews/discussion
+- Project vademecum [pdf](TAR-2019-ProjectVademecum.pdf)
