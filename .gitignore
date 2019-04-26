@@ -1,4 +1,4 @@
-
+﻿
 # Created by https://www.gitignore.io/api/latex,linux,macos,python,windows,pycharm
 # Edit at https://www.gitignore.io/?templates=latex,linux,macos,python,windows,pycharm
 
@@ -545,3 +545,6 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.gitignore.io/api/latex,linux,macos,python,windows,pycharm
+
+# dataset
+dataset/

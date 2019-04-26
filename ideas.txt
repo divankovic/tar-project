@@ -1,0 +1,3 @@
+-Predict for days in front, not for the same day, think of a way to do this
+-use word2vec instead of CountVectorizer/TfidfVectorizer
+-incorporate sentiment analysis for better performance
