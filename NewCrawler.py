@@ -26,7 +26,7 @@ for i in range(60):
         except:
             pass
     if i%10==0:
-        print("Crawlano %d/%d dana"%(i+1*30,60*30))
+        print("Crawlano %d/%d dana"%(i*30,60*30))
 print('Crawl gotov')
 
 topics_data = pd.DataFrame(titles)
