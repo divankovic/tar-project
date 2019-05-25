@@ -545,6 +545,6 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.gitignore.io/api/latex,linux,macos,python,windows,pycharm
-
+.idea
 /papers
 /datasets
