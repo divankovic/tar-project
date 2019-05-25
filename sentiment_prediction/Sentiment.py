@@ -1,8 +1,8 @@
-import tflearn
-from tflearn.data_utils import to_categorical, pad_sequences
 import json
 
-from sentiment_prediction.SentimentDataset import SentimentDataset
+import tflearn
+from SentimentDataset import SentimentDataset
+from tflearn.data_utils import to_categorical, pad_sequences
 
 
 class Sentiment():
