@@ -22,7 +22,7 @@ class Sentiment():
         X_test = pad_sequences(X_test, maxlen=50, value=0.)
 
         self.model.fit(X_train, Y_train, validation_set=(X_test, Y_test), show_metric=True, batch_size=batch_size,n_epoch=epochs)
-        self.model.save('./model/sentiment.model')
+        self.model.save('./mode_checkpoints/sentiment.model')
 
     def classify(self,input):
         X=pad_sequences(input, maxlen=50, value=0.)

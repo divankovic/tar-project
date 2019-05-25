@@ -46,7 +46,7 @@ for index,row in original.iterrows():
     new_dataset['sentiment'].append(row['sentiment'])
 
 topics_data = pd.DataFrame(new_dataset)
-topics_data.to_csv('./preprocessed_dataset/kita.csv', index=False)
+topics_data.to_csv('../preprocessed_dataset/kita.csv', index=False)
 
-with open('./preprocessed_dataset/word_dict.json', 'w') as fp:
+with open('../preprocessed_dataset/word_dict.json', 'w') as fp:
     json.dump(word_dictionary, fp)
