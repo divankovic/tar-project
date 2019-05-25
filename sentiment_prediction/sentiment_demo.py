@@ -37,4 +37,4 @@ while True:
         break
     news_preproed = preprocess(news, word_dict)
     result = model.classify([news_preproed])
-    print('Positive : %f  Negative : %f'%(result[0][0], result[0][1]))
+    print('Positive : %f  Negative : %f' % (result[0][0], result[0][1]))
