@@ -548,3 +548,4 @@ $RECYCLE.BIN/
 .idea
 /papers
 /datasets
+#/semeval_financial_news/checkpoints
