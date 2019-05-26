@@ -1,3 +1,4 @@
+import re
 from collections import defaultdict
 
 import pandas as pd
@@ -33,7 +34,7 @@ market_data = load_data(
         float(line.split(',')[-2]),
     )
 )
-combined_data = defaultdict(lambda: dict(title=[], sentiment=0))
+combined_data = defaultdict(lambda: dict(title=[], stock_move=0))
 
 for newsline in news:
     date, title = newsline
@@ -45,16 +46,17 @@ for newsline in news:
 
 for numeric_data in market_data:
     date, move, *_ = numeric_data
-    combined_data[date]["sentiment"] = 1 if move >= 0 else 0
+    combined_data[date]["stock_move"] = 1 if move >= 0 else 0
 
-dataset = dict(title=[], sentiment=[])
+dataset = dict(date=[], title=[], stock_move=[])
 
 for date in combined_data:
     titles = combined_data[date]["title"]
-    sentiment = combined_data[date]["sentiment"]
+    stock_move = combined_data[date]["stock_move"]
 
     dataset["title"].extend(titles)
-    dataset["sentiment"].extend([sentiment, ] * len(titles))
+    dataset["date"].extend([date, ] * len(titles))
+    dataset["stock_move"].extend([stock_move, ] * len(titles))
 
 frame = pd.DataFrame(dataset)
 frame.to_csv('kaggle_dataset.csv', index=False)

@@ -38,8 +38,6 @@ kaggle_dataset = pd.read_csv('./utils/kaggle_dataset.csv')
 kaggle_news = kaggle_dataset['title'].tolist()
 kaggle_sentiment = kaggle_dataset['sentiment'].tolist()
 
-cnt = 0
-
 with open('./preprocessed_dataset/kaggle_predictions.csv', 'w') as fp:
     fp.write('index,positive,negative,sentiment_gt\n')
 
@@ -54,13 +52,10 @@ with open('./preprocessed_dataset/kaggle_predictions.csv', 'w') as fp:
         fp.write('{},{},{},{}\n'.format(i, positive, negative, sentiment_gt))
 
         pred = int(round(positive))
-        cnt = cnt + 1 if pred == sentiment_gt else cnt
 
-        print('Index: {} Positive : {}  Negative : {} Truth: {}'.format(
+        print('Index: {} Positive : {:.2f}  Negative : {:.2f} Truth: {}'.format(
             i,
-            round(positive, 3),
-            round(negative, 3),
+            positive,
+            negative,
             sentiment_gt,
         ))
-
-print(cnt / len(kaggle_news))
