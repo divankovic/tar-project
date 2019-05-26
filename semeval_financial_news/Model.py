@@ -2,8 +2,10 @@ from keras.optimizers import *
 from keras import Sequential
 from keras.layers import Embedding, LSTM, Dense, Dropout
 from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence  import pad_sequences
+from keras.preprocessing.sequence import pad_sequences
+from keras.models import load_model
 from semeval_financial_news.Dataset import Dataset
+import pickle
 
 
 class Model():
@@ -15,17 +17,21 @@ class Model():
 
         model = Sequential()
         model.add(Embedding(self.vocabulary_size, self.embedding_size, input_length=self.max_len))
-        model.add(LSTM(512, return_sequences=True, dropout=0.3))
-        model.add(LSTM(512, dropout=0.3))
+        model.add(LSTM(512, return_sequences=True, dropout=0.5))
+        model.add(LSTM(512, dropout=0.5))
         model.add(Dense(1, activation='sigmoid'))
 
         self.model = model
+        self.tokenizer = Tokenizer(num_words=self.vocabulary_size)
 
     def train(self, X_train, Y_train, X_test, Y_test, batch_size=32, epochs=10):
-        t = Tokenizer(num_words=self.vocabulary_size)
-        t.fit_on_texts(X_train)
-        encoded_train_titles = t.texts_to_sequences(X_train)
-        encoded_test_titles = t.texts_to_sequences(X_test)
+        self.tokenizer.fit_on_texts(X_train)
+        # pickle word dictionary for later use
+        with open('./checkpoints/tokenizer.pickle', 'wb') as handle:
+            pickle.dump(self.tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        encoded_train_titles = self.tokenizer.texts_to_sequences(X_train)
+        encoded_test_titles = self.tokenizer.texts_to_sequences(X_test)
 
         X_train = encoded_train_titles
         X_test = encoded_test_titles
@@ -41,8 +47,16 @@ class Model():
         scores = self.model.evaluate(X_test, Y_test, verbose=0)
         print('Test accuracy:', scores[1])
 
-    def load_model(self, path):
-        self.model.load(path)
+    def load_model(self, path, dict_path):
+        self.model = load_model(path)
+
+        with open(dict_path, 'rb') as handle:
+            self.tokenizer = pickle.load(handle)
+
+    def classify(self, input):
+        X = self.tokenizer.texts_to_sequences(input)
+        X = pad_sequences(X, maxlen=self.max_len, value=0)
+        return self.model.predict(X)
 
 
 if __name__ == '__main__':

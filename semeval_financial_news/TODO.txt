@@ -1,0 +1,12 @@
+Getting 70-80% accuracy for now, depending on the parameters, needs little more tuning
+
+Improvements : 
+1. use pretrained word embeddings (GloVE or something)
+2. use NER to replace company names with <company>
+3. replace numbers with <number>
+
+Other:
+1. try out regression
+2. download Apple finance news from Yahoo finance and/or reddit
+3. download Apple stock market data
+4. try out for Apple
