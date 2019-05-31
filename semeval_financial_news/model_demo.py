@@ -1,5 +1,5 @@
-from semeval_financial_news.Model import Model
-from semeval_financial_news.Dataset import Dataset
+from Model import Model
+from Dataset import Dataset
 
 model = Model()
 model.load_model('./checkpoints/model', './checkpoints/tokenizer.pickle')

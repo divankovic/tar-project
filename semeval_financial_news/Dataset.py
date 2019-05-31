@@ -8,18 +8,19 @@ from sklearn.model_selection import train_test_split
 
 
 class Dataset():
-    def __init__(self, dataset_path):
-        self.dataset = Dataset.preprocess(pd.read_json(dataset_path))
+    def __init__(self, dataset_path, regression=False):
+        self.dataset = Dataset.preprocess(pd.read_json(dataset_path), regression)
 
     @staticmethod
-    def preprocess(dataset):
+    def preprocess(dataset, regression=False):
         dataset_preproed = {'title': [], 'sentiment': []}
 
         for index, row in dataset.iterrows():
             new_title = Dataset.preprocess_title(row['title'])
+            sentiment = row['sentiment'] if regression else (1 if row['sentiment'] >= 0 else 0)
 
             dataset_preproed['title'].append(new_title)
-            dataset_preproed['sentiment'].append(1 if row['sentiment'] >= 0 else 0)
+            dataset_preproed['sentiment'].append(sentiment)
 
         return dataset_preproed
 

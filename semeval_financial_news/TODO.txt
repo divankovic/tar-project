@@ -10,3 +10,9 @@ Other:
 2. download Apple finance news from Yahoo finance and/or reddit
 3. download Apple stock market data
 4. try out for Apple
+
+--------------
+
+Tried out different regression models (regression_model.py)
+- mean absolute error on train set around 0.1
+- mean absolute error on validation set around 0.22
