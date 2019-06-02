@@ -1,5 +1,7 @@
-import os
+import json
+import pathlib
 import pickle
+import time
 
 import keras
 import numpy as np
@@ -24,10 +26,13 @@ class Model:
         self.use_glove = use_glove
 
         self.model = None
-        self.max_len = 40
+        self.max_len = 30
         self.embedding_size = 100
         self.vocabulary_size = 10000
         self.tokenizer = Tokenizer(num_words=self.vocabulary_size)
+
+        self.log_dir = pathlib.Path('.log') / get_timestamp()
+        self.log_dir.mkdir(parents=True, exist_ok=True)
 
     def build_model(self, embedding_initializer):
         self.model = Sequential()
@@ -61,19 +66,34 @@ class Model:
         X_test = pad_sequences(X_test, maxlen=self.max_len, value=0)
 
         word_index = self.tokenizer.word_index
-
-        self.build_model(
-            embedding_initializer=self.load_glove_embeddings(word_index) if self.use_glove else None
-        )
+        self.build_model(embedding_initializer=self.load_glove_embeddings(word_index) if self.use_glove else None)
 
         print('Y_train mean:', np.mean(Y_train))
         print('Y_test mean:', np.mean(Y_test))
 
-        optimizer = Adam(0.01)
-        self.model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+        optimizer = Adam(0.03)
+        callbacks = [
+            keras.callbacks.EarlyStopping(
+                monitor='val_acc',
+                mode='max',
+                verbose=1,
+                patience=15,
+            ),
+            keras.callbacks.ModelCheckpoint(
+                str(self.log_dir / 'best_model.hdf5'),
+                monitor='val_acc',
+                verbose=1,
+                save_best_only=True,
+                mode='max'
+            )
+        ]
 
-        self.model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs)
+        self.model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+        self.model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs, callbacks=callbacks)
         self.model.save('./checkpoints/model')
+
+        with (self.log_dir / 'arch.json').open('w') as handle:
+            handle.write(json.dumps(self.model.to_json(), sort_keys=True, indent=4))
 
         scores = self.model.evaluate(X_test, Y_test, verbose=0)
         print('Test accuracy:', scores[1])
@@ -83,7 +103,7 @@ class Model:
         print('Loading embeddings.')
         embeddings_index = {}
 
-        if not os.path.exists('glove.6B.100d.txt'):
+        if not pathlib.Path('glove.6B.100d.txt').exists():
             raise FileNotFoundError(
                 'Download glove embeddings from http://nlp.stanford.edu/data/glove.6B.zip (822 MB file) and unzzip\n' +
                 'Linux command:\n\n\t wget http://nlp.stanford.edu/data/glove.6B.zip; unzip glove.6B.zip'
@@ -121,9 +141,13 @@ class Model:
         return self.model.predict(X)
 
 
+def get_timestamp():
+    return str(int(time.time()))
+
+
 if __name__ == '__main__':
-    # dataset = Dataset('../apple/dataset/apple_reddit.json')
     dataset = Dataset('./data/headlines_train.json')
-    model = Model(use_glove=True)
     X_train, Y_train, X_test, Y_test = dataset.train_test_split()
+
+    model = Model(use_glove=True)
     model.train(X_train, Y_train, X_test, Y_test, epochs=50)
