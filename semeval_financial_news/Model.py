@@ -29,15 +29,15 @@ class Model:
         self.vocabulary_size = 10000
         self.tokenizer = Tokenizer(num_words=self.vocabulary_size)
 
-    def build_model(self, glove_embeddings=None):
+    def build_model(self, embedding_initializer):
         self.model = Sequential()
 
         self.model.add(Embedding(
             input_dim=self.vocabulary_size,
             output_dim=self.embedding_size,
             input_length=self.max_len,
-            embeddings_initializer=Constant(glove_embeddings) if self.use_glove else glove_embeddings,
-            trainable=glove_embeddings is None
+            embeddings_initializer=embedding_initializer,
+            trainable=embedding_initializer is None
         ))
         self.model.add(LSTM(64, return_sequences=True, dropout=0.5))
         self.model.add(LSTM(64, dropout=0.5, kernel_regularizer=l2(0.0001)))
@@ -63,7 +63,7 @@ class Model:
         word_index = self.tokenizer.word_index
 
         self.build_model(
-            glove_embeddings=self.load_glove_embeddings(word_index) if self.use_glove else None
+            embedding_initializer=self.load_glove_embeddings(word_index) if self.use_glove else None
         )
 
         print('Y_train mean:', np.mean(Y_train))
@@ -107,7 +107,7 @@ class Model:
 
         print('Embeddings loaded.')
 
-        return embedding_matrix
+        return Constant(embedding_matrix)
 
     def load_model(self, path, dict_path):
         self.model = load_model(path)
@@ -122,7 +122,8 @@ class Model:
 
 
 if __name__ == '__main__':
-    dataset = Dataset('../apple/dataset/apple_reddit.json')
+    # dataset = Dataset('../apple/dataset/apple_reddit.json')
+    dataset = Dataset('./data/headlines_train.json')
     model = Model(use_glove=True)
     X_train, Y_train, X_test, Y_test = dataset.train_test_split()
     model.train(X_train, Y_train, X_test, Y_test, epochs=50)
