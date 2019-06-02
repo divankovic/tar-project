@@ -71,7 +71,7 @@ class Model:
         print('Y_train mean:', np.mean(Y_train))
         print('Y_test mean:', np.mean(Y_test))
 
-        optimizer = Adam(0.03)
+        optimizer = Adam(0.01)
         callbacks = [
             keras.callbacks.EarlyStopping(
                 monitor='val_acc',
