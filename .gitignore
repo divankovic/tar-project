@@ -549,3 +549,5 @@ $RECYCLE.BIN/
 /papers
 /datasets
 /semeval_financial_news/checkpoints
+
+glove*
