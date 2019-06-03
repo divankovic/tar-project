@@ -28,8 +28,8 @@ class Model():
         self.model = None
 
         self.vocabulary_size = 10000
-        self.embedding_size = 100
-        self.max_len = 25
+        self.embedding_size = 300
+        self.max_len = 30
         self.tokenizer = Tokenizer(num_words=self.vocabulary_size)
 
     def build_model(self, embedding_initializer):
@@ -43,33 +43,26 @@ class Model():
             trainable=embedding_initializer is None
         ))
         self.model.add(LSTM(128, return_sequences=True, dropout=0.5))
-        self.model.add(LSTM(128, dropout=0.5, return_sequences=True, kernel_regularizer=l2(0.0001)))
-        self.model.add(LSTM(128, dropout=0.5, kernel_regularizer=l2(0.0001)))
-        self.model.add(Dense(100, activation='relu', kernel_regularizer=l2(0.0001)))
+        self.model.add(LSTM(128, dropout=0.5, kernel_regularizer=l2(0.001)))
+        self.model.add(Dense(100, activation='relu', kernel_regularizer=l2(0.001)))
         self.model.add(Dense(1, activation='tanh'))
 
-        #alternative model
-        # self.model.add(Bidirectional(LSTM(128, return_sequences=True, merge_mode="sum", dropout=0.3)))
-        # self.model.add(Bidirectional(LSTM(128, return_sequences=True, merge_mode="sum", dropout=0.3)))
-        # self.model.add(Convolution1D(128, kernel_size=5, border_mode="valid"))
-        # self.model.add(MaxPooling1D(pool_length=2, border_mode="valid"))
-
     @staticmethod
-    def cos_distance(y_true, y_pred):
+    def cos_distance_loss(y_true, y_pred):
         def l2_normalize(x, axis):
             norm = K.sqrt(K.sum(K.square(x), axis=axis, keepdims=True))
             return K.sign(x) * K.maximum(K.abs(x), K.epsilon()) / K.maximum(norm, K.epsilon())
 
         y_true = l2_normalize(y_true, axis=-1)
         y_pred = l2_normalize(y_pred, axis=-1)
-        return K.mean(y_true * y_pred, axis=-1)
+        return 1 - K.mean(y_true * y_pred, axis=-1)
 
     def train(self, X_train, Y_train, X_test, Y_test, batch_size=16, epochs=100):
 
         self.tokenizer.fit_on_texts(X_train)
 
         # pickle word dictionary for later use
-        with open('./checkpoints/tokenizer_reg.pickle', 'wb') as handle:
+        with open('./checkpoints/reg/tokenizer_reg.pickle', 'wb') as handle:
             pickle.dump(self.tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
         encoded_train_titles = self.tokenizer.texts_to_sequences(X_train)
@@ -87,9 +80,9 @@ class Model():
         word_index = self.tokenizer.word_index
         self.build_model(embedding_initializer=self.load_glove_embeddings(word_index) if self.use_glove else None)
 
-        optimizer = Adam(1e-3)
+        optimizer = Adam()
 
-        self.model.compile(loss=keras.losses.cosine_proximity, optimizer=optimizer, metrics=[-metrics.cosine, 'mae'])
+        self.model.compile(loss='mse', optimizer=optimizer, metrics=['mae', metrics.cosine])
 
         self.model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs)
         self.model.save('./checkpoints/reg/model')
