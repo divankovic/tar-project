@@ -27,7 +27,7 @@ class Model:
 
         self.model = None
         self.max_len = 30
-        self.embedding_size = 100
+        self.embedding_size = 300
         self.vocabulary_size = 10000
         self.tokenizer = Tokenizer(num_words=self.vocabulary_size)
 
@@ -44,9 +44,9 @@ class Model:
             embeddings_initializer=embedding_initializer,
             trainable=embedding_initializer is None
         ))
-        self.model.add(LSTM(64, return_sequences=True, dropout=0.5))
-        self.model.add(LSTM(64, dropout=0.5, kernel_regularizer=l2(0.0001)))
-        self.model.add(Dense(32, activation='relu', kernel_regularizer=l2(0.0001)))
+        self.model.add(LSTM(32, return_sequences=True, dropout=0.5))
+        self.model.add(LSTM(32, dropout=0.5, kernel_regularizer=l2(0.00001)))
+        self.model.add(Dense(32, activation='relu', kernel_regularizer=l2(0.00001)))
         self.model.add(Dense(1, activation='sigmoid'))
 
     def train(self, X_train, Y_train, X_test, Y_test, batch_size=32, epochs=10):
@@ -94,7 +94,7 @@ class Model:
         self.model.save('./checkpoints/model')
 
         with (self.log_dir / 'arch.json').open('w') as handle:
-            handle.write(json.dumps(self.model.to_json(), sort_keys=True, indent=4))
+            handle.write(self.model.to_json())
 
         scores = self.model.evaluate(X_test, Y_test, verbose=0)
         print('Test accuracy:', scores[1])
@@ -104,14 +104,13 @@ class Model:
         print('Loading embeddings.')
         embeddings_index = {}
 
-        glove_path = './data/glove.6B/glove.6B.100d.txt'
-        if not pathlib.Path(glove_path).exists():
+        if not pathlib.Path('glove.6B.300d.txt').exists():
             raise FileNotFoundError(
                 'Download glove embeddings from http://nlp.stanford.edu/data/glove.6B.zip (822 MB file) and unzzip\n' +
                 'Linux command:\n\n\t wget http://nlp.stanford.edu/data/glove.6B.zip; unzip glove.6B.zip'
             )
 
-        f = open(glove_path, encoding='utf-8')
+        f = open('glove.6B.300d.txt', encoding='utf-8')
         for line in f:
             values = line.split()
             word = values[0]
@@ -136,13 +135,6 @@ class Model:
 
         with open(dict_path, 'rb') as handle:
             self.tokenizer = pickle.load(handle)
-
-    def load_architecture_and_weights(self, architecture_path, weights_path):
-        # TODO fix this if neccesary
-        with open(architecture_path, 'r') as f:
-            self.model = model_from_json(f.read())
-
-        self.model.load_weights(weights_path)
 
     def classify(self, input):
         X = self.tokenizer.texts_to_sequences(input)
