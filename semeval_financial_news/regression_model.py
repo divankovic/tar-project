@@ -1,17 +1,20 @@
+import keras.backend as K
 from keras.optimizers import *
 from keras import Sequential
-from keras.layers import Embedding, LSTM, Dense, Dropout
+from keras.layers import Embedding, LSTM, Dense, Dropout, Convolution1D
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
+from keras.initializers import Constant
+from keras import metrics
 from keras.models import load_model
 from keras.regularizers import l2
 from Dataset import Dataset
 
 import pickle
+import pathlib
 import tensorflow as tf
 import keras
 import numpy as np
-
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -20,22 +23,48 @@ keras.backend.set_session(tf.Session(config=config))
 
 class Model():
 
-    def __init__(self):
+    def __init__(self, use_glove=True):
+        self.use_glove = use_glove
+        self.model = None
+
         self.vocabulary_size = 10000
-        self.embedding_size = 128
+        self.embedding_size = 100
         self.max_len = 25
-
-        model = Sequential()
-        model.add(Embedding(self.vocabulary_size, self.embedding_size, input_length=self.max_len))
-        model.add(LSTM(32, return_sequences=True, dropout=0.5))
-        model.add(LSTM(32, dropout=0.5, kernel_regularizer=l2(0.001)))
-        model.add(Dense(32, activation='relu', kernel_regularizer=l2(0.001)))
-        model.add(Dense(1, activation='linear'))
-
-        self.model = model
         self.tokenizer = Tokenizer(num_words=self.vocabulary_size)
 
-    def train(self, X_train, Y_train, X_test, Y_test, batch_size=16, epochs=50):
+    def build_model(self, embedding_initializer):
+        self.model = Sequential()
+
+        self.model.add(Embedding(
+            input_dim=self.vocabulary_size,
+            output_dim=self.embedding_size,
+            input_length=self.max_len,
+            embeddings_initializer=embedding_initializer,
+            trainable=embedding_initializer is None
+        ))
+        self.model.add(LSTM(128, return_sequences=True, dropout=0.5))
+        self.model.add(LSTM(128, dropout=0.5, return_sequences=True, kernel_regularizer=l2(0.0001)))
+        self.model.add(LSTM(128, dropout=0.5, kernel_regularizer=l2(0.0001)))
+        self.model.add(Dense(100, activation='relu', kernel_regularizer=l2(0.0001)))
+        self.model.add(Dense(1, activation='tanh'))
+
+        #alternative model
+        # self.model.add(Bidirectional(LSTM(128, return_sequences=True, merge_mode="sum", dropout=0.3)))
+        # self.model.add(Bidirectional(LSTM(128, return_sequences=True, merge_mode="sum", dropout=0.3)))
+        # self.model.add(Convolution1D(128, kernel_size=5, border_mode="valid"))
+        # self.model.add(MaxPooling1D(pool_length=2, border_mode="valid"))
+
+    @staticmethod
+    def cos_distance(y_true, y_pred):
+        def l2_normalize(x, axis):
+            norm = K.sqrt(K.sum(K.square(x), axis=axis, keepdims=True))
+            return K.sign(x) * K.maximum(K.abs(x), K.epsilon()) / K.maximum(norm, K.epsilon())
+
+        y_true = l2_normalize(y_true, axis=-1)
+        y_pred = l2_normalize(y_pred, axis=-1)
+        return K.mean(y_true * y_pred, axis=-1)
+
+    def train(self, X_train, Y_train, X_test, Y_test, batch_size=16, epochs=100):
 
         self.tokenizer.fit_on_texts(X_train)
 
@@ -49,18 +78,21 @@ class Model():
         X_train = encoded_train_titles
         X_test = encoded_test_titles
 
-        print('Train mean', np.mean(np.abs(Y_train)))
-        print('Test mean', np.mean(np.abs(Y_test)))
+        # print('Train mean', np.mean(np.abs(Y_train)))
+        # print('Test mean', np.mean(np.abs(Y_test)))
 
         X_train = pad_sequences(X_train, maxlen=self.max_len, value=0)
         X_test = pad_sequences(X_test, maxlen=self.max_len, value=0)
 
-        optimizer = Adam(0.01)
+        word_index = self.tokenizer.word_index
+        self.build_model(embedding_initializer=self.load_glove_embeddings(word_index) if self.use_glove else None)
 
-        self.model.compile(loss='mse', optimizer=optimizer, metrics=['mse', 'mae'])
+        optimizer = Adam(1e-3)
+
+        self.model.compile(loss=keras.losses.cosine_proximity, optimizer=optimizer, metrics=[-metrics.cosine, 'mae'])
 
         self.model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs)
-        self.model.save('./checkpoints/model')
+        self.model.save('./checkpoints/reg/model')
 
         scores = self.model.evaluate(X_test, Y_test, verbose=0)
         print('Test MSE:', scores[1])
@@ -76,7 +108,7 @@ class Model():
         print('Loading embeddings.')
         embeddings_index = {}
 
-        glove_path = './data/glove.6B/glove.6B.100d.txt'
+        glove_path = './data/glove.6B/glove.6B.'+str(self.embedding_size)+'d.txt'
         if not pathlib.Path(glove_path).exists():
             raise FileNotFoundError(
                 'Download glove embeddings from http://nlp.stanford.edu/data/glove.6B.zip (822 MB file) and unzzip\n' +

@@ -16,8 +16,8 @@ class Dataset():
         dataset_preproed = {'title': [], 'sentiment': []}
 
         for index, row in dataset.iterrows():
-            new_title = Dataset.preprocess_title(row['title'])
-            # new_title = Dataset.preprocess_title(row['title']).replace(row['company'], '<company>')
+            # new_title = Dataset.preprocess_title(row['title'])
+            new_title = Dataset.preprocess_title(row['title']).replace(row['company'], '<company>')
             sentiment = row['sentiment'] if regression else (1 if row['sentiment'] >= 0 else 0)
 
             dataset_preproed['title'].append(new_title)
