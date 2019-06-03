@@ -71,6 +71,38 @@ class Model():
         with open(dict_path, 'rb') as handle:
             self.tokenizer = pickle.load(handle)
 
+    def load_glove_embeddings(self, word_index):
+
+        print('Loading embeddings.')
+        embeddings_index = {}
+
+        glove_path = './data/glove.6B/glove.6B.100d.txt'
+        if not pathlib.Path(glove_path).exists():
+            raise FileNotFoundError(
+                'Download glove embeddings from http://nlp.stanford.edu/data/glove.6B.zip (822 MB file) and unzzip\n' +
+                'Linux command:\n\n\t wget http://nlp.stanford.edu/data/glove.6B.zip; unzip glove.6B.zip'
+            )
+
+        f = open(glove_path, encoding='utf-8')
+        for line in f:
+            values = line.split()
+            word = values[0]
+            coefs = np.asarray(values[1:], dtype='float32')
+            embeddings_index[word] = coefs
+        f.close()
+
+        num_words = min(len(word_index), self.vocabulary_size)
+        embedding_matrix = np.zeros((num_words + 1, self.embedding_size))
+        for word, i in word_index.items():
+            embedding_vector = embeddings_index.get(word)
+            if embedding_vector is not None:
+                # words not found in embedding index will be all-zeros.
+                embedding_matrix[i] = embedding_vector
+
+        print('Embeddings loaded.')
+
+        return Constant(embedding_matrix)
+
     def classify(self, input):
         X = self.tokenizer.texts_to_sequences(input)
         X = pad_sequences(X, maxlen=self.max_len, value=0)

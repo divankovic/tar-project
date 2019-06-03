@@ -9,7 +9,7 @@ from Dataset import Dataset
 from keras import Sequential
 from keras.initializers import Constant
 from keras.layers import Embedding, LSTM, Dense
-from keras.models import load_model
+from keras.models import load_model, model_from_json
 from keras.optimizers import *
 from keras.preprocessing.sequence import pad_sequences
 from keras.preprocessing.text import Tokenizer
@@ -89,7 +89,8 @@ class Model:
         ]
 
         self.model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-        self.model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs, callbacks=callbacks)
+        self.model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs,
+                       callbacks=callbacks)
         self.model.save('./checkpoints/model')
 
         with (self.log_dir / 'arch.json').open('w') as handle:
@@ -103,13 +104,14 @@ class Model:
         print('Loading embeddings.')
         embeddings_index = {}
 
-        if not pathlib.Path('glove.6B.100d.txt').exists():
+        glove_path = './data/glove.6B/glove.6B.100d.txt'
+        if not pathlib.Path(glove_path).exists():
             raise FileNotFoundError(
                 'Download glove embeddings from http://nlp.stanford.edu/data/glove.6B.zip (822 MB file) and unzzip\n' +
                 'Linux command:\n\n\t wget http://nlp.stanford.edu/data/glove.6B.zip; unzip glove.6B.zip'
             )
 
-        f = open('glove.6B.100d.txt')
+        f = open(glove_path, encoding='utf-8')
         for line in f:
             values = line.split()
             word = values[0]
@@ -134,6 +136,13 @@ class Model:
 
         with open(dict_path, 'rb') as handle:
             self.tokenizer = pickle.load(handle)
+
+    def load_architecture_and_weights(self, architecture_path, weights_path):
+        # TODO fix this if neccesary
+        with open(architecture_path, 'r') as f:
+            self.model = model_from_json(f.read())
+
+        self.model.load_weights(weights_path)
 
     def classify(self, input):
         X = self.tokenizer.texts_to_sequences(input)
