@@ -549,5 +549,7 @@ $RECYCLE.BIN/
 /papers
 /datasets
 /semeval_financial_news/checkpoints
+/demo
+/submission
 
 glove*

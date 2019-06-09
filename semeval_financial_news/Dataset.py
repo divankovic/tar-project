@@ -59,7 +59,9 @@ class Dataset():
         for token in filtered_tokens:
             new_title += token + ' '
 
-        new_title = new_title.replace(company.lower(), 'company')
+        if company is not None:
+            new_title = new_title.replace(company.lower(), 'company')
+
         new_title.strip()
 
         return new_title
