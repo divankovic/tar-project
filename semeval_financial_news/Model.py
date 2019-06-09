@@ -90,7 +90,7 @@ class Model:
 
         self.model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
         self.model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs,
-                       callbacks=callbacks, verbose = 0)
+                       callbacks=callbacks, verbose=0)
         self.model.save('./checkpoints/model')
 
         with (self.log_dir / 'arch.json').open('w') as handle:
@@ -103,7 +103,7 @@ class Model:
 
         print('Loading embeddings.')
         embeddings_index = {}
-        embeddings_path = './data/glove.6B/glove.6B.'+str(self.embedding_size)+'d.txt'
+        embeddings_path = './data/glove.6B/glove.6B.' + str(self.embedding_size) + 'd.txt'
 
         if not pathlib.Path(embeddings_path).exists():
             raise FileNotFoundError(
@@ -141,6 +141,11 @@ class Model:
         X = self.tokenizer.texts_to_sequences(input)
         X = pad_sequences(X, maxlen=self.max_len, value=0)
         return self.model.predict(X)
+
+    def predict_classes(self, input):
+        X = self.tokenizer.texts_to_sequences(input)
+        X = pad_sequences(X, maxlen=self.max_len, value=0)
+        return self.model.predict_classes(X)
 
 
 def get_timestamp():

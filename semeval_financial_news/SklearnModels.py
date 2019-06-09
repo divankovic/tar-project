@@ -19,4 +19,4 @@ for train_index, test_index in k_fold.split(dataset.dataset['title']):
     model = Model(use_glove=True)
     model.train(x_train, y_train, x_test, y_test, epochs=50)
 
-    print(accuracy_score(y_true=y_test, y_pred=model.classify(x_test)))
+    print(accuracy_score(y_true=y_test, y_pred=model.predict_classes(x_test)))
