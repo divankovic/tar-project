@@ -18,5 +18,6 @@ for train_index, test_index in k_fold.split(dataset.dataset['title']):
 
     model = Model(use_glove=True)
     model.train(x_train, y_train, x_test, y_test, epochs=50)
+    model.load_model(path=str(model.log_dir)+'/best_model.hdf5', dict_path='./checkpoints/tokenizer.pickle')
 
     print(accuracy_score(y_true=y_test, y_pred=model.predict_classes(x_test)))
