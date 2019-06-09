@@ -1,16 +1,18 @@
 import keras.backend as K
 from keras.optimizers import *
 from keras import Sequential
-from keras.layers import Embedding, LSTM, Dense, Dropout, Convolution1D
+from keras.layers import Embedding, LSTM, Dense, Dropout, Convolution1D, Bidirectional
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.initializers import Constant
 from keras import metrics
 from keras.models import load_model
 from keras.regularizers import l2
+from keras import losses
 from Dataset import Dataset
 
 import pickle
+import time
 import pathlib
 import tensorflow as tf
 import keras
@@ -29,8 +31,11 @@ class Model():
 
         self.vocabulary_size = 10000
         self.embedding_size = 300
-        self.max_len = 30
+        self.max_len = 15
         self.tokenizer = Tokenizer(num_words=self.vocabulary_size)
+
+        self.log_dir = pathlib.Path('checkpoints/reg/.log') / get_timestamp()
+        self.log_dir.mkdir(parents=True, exist_ok=True)
 
     def build_model(self, embedding_initializer):
         self.model = Sequential()
@@ -42,20 +47,17 @@ class Model():
             embeddings_initializer=embedding_initializer,
             trainable=embedding_initializer is None
         ))
-        self.model.add(LSTM(128, return_sequences=True, dropout=0.5))
-        self.model.add(LSTM(128, dropout=0.5, kernel_regularizer=l2(0.001)))
+        self.model.add(LSTM(128, return_sequences=True, dropout=0.2, kernel_regularizer=l2(0.001)))
+        self.model.add(LSTM(128, dropout=0.2, return_sequences=True, kernel_regularizer=l2(0.001)))
+        self.model.add(LSTM(128, dropout=0.2, kernel_regularizer=l2(0.001)))
         self.model.add(Dense(100, activation='relu', kernel_regularizer=l2(0.001)))
         self.model.add(Dense(1, activation='tanh'))
 
     @staticmethod
-    def cos_distance_loss(y_true, y_pred):
-        def l2_normalize(x, axis):
-            norm = K.sqrt(K.sum(K.square(x), axis=axis, keepdims=True))
-            return K.sign(x) * K.maximum(K.abs(x), K.epsilon()) / K.maximum(norm, K.epsilon())
-
-        y_true = l2_normalize(y_true, axis=-1)
-        y_pred = l2_normalize(y_pred, axis=-1)
-        return 1 - K.mean(y_true * y_pred, axis=-1)
+    def cos_distance(y_true, y_pred):
+        y_true = K.l2_normalize(y_true, axis=-1)
+        y_pred = K.l2_normalize(y_pred, axis=-1)
+        return K.mean(1 - K.sum((y_true * y_pred), axis=-1))
 
     def train(self, X_train, Y_train, X_test, Y_test, batch_size=16, epochs=100):
 
@@ -81,14 +83,30 @@ class Model():
         self.build_model(embedding_initializer=self.load_glove_embeddings(word_index) if self.use_glove else None)
 
         optimizer = Adam()
+        callbacks = [
+            keras.callbacks.EarlyStopping(
+                monitor='val_mean_absolute_error',
+                mode='min',
+                verbose=1,
+                patience=15,
+            ),
+            keras.callbacks.ModelCheckpoint(
+                str(self.log_dir / 'best_model.hdf5'),
+                monitor='val_mean_absolute_error',
+                verbose=1,
+                save_best_only=True,
+                mode='min'
+            )
+        ]
 
-        self.model.compile(loss='mse', optimizer=optimizer, metrics=['mae', metrics.cosine])
+        self.model.compile(loss=losses.mean_absolute_error, optimizer=optimizer, metrics=['mae', metrics.cosine])
 
-        self.model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs)
+        self.model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs,
+                       callbacks=callbacks)
         self.model.save('./checkpoints/reg/model')
 
         scores = self.model.evaluate(X_test, Y_test, verbose=0)
-        print('Test MSE:', scores[1])
+        print('Test MAE:', scores[1])
 
     def load_model(self, path, dict_path):
         self.model = load_model(path)
@@ -101,7 +119,7 @@ class Model():
         print('Loading embeddings.')
         embeddings_index = {}
 
-        glove_path = './data/glove.6B/glove.6B.'+str(self.embedding_size)+'d.txt'
+        glove_path = './data/glove.6B/glove.6B.' + str(self.embedding_size) + 'd.txt'
         if not pathlib.Path(glove_path).exists():
             raise FileNotFoundError(
                 'Download glove embeddings from http://nlp.stanford.edu/data/glove.6B.zip (822 MB file) and unzzip\n' +
@@ -132,6 +150,10 @@ class Model():
         X = self.tokenizer.texts_to_sequences(input)
         X = pad_sequences(X, maxlen=self.max_len, value=0)
         return self.model.predict(X)
+
+
+def get_timestamp():
+    return str(int(time.time()))
 
 
 if __name__ == '__main__':

@@ -26,8 +26,8 @@ class Model:
         self.use_glove = use_glove
 
         self.model = None
-        self.max_len = 30
-        self.embedding_size = 300
+        self.max_len = 15
+        self.embedding_size = 200
         self.vocabulary_size = 10000
         self.tokenizer = Tokenizer(num_words=self.vocabulary_size)
 
@@ -44,9 +44,9 @@ class Model:
             embeddings_initializer=embedding_initializer,
             trainable=embedding_initializer is None
         ))
-        self.model.add(LSTM(32, return_sequences=True, dropout=0.5))
-        self.model.add(LSTM(32, dropout=0.5, kernel_regularizer=l2(0.00001)))
-        self.model.add(Dense(32, activation='relu', kernel_regularizer=l2(0.00001)))
+        self.model.add(LSTM(32, return_sequences=True, dropout=0.3, kernel_regularizer=l2(0.001)))
+        self.model.add(LSTM(32, dropout=0.3, kernel_regularizer=l2(0.001)))
+        self.model.add(Dense(32, activation='relu', kernel_regularizer=l2(0.001)))
         self.model.add(Dense(1, activation='sigmoid'))
 
     def train(self, X_train, Y_train, X_test, Y_test, batch_size=32, epochs=10):
@@ -68,10 +68,10 @@ class Model:
         word_index = self.tokenizer.word_index
         self.build_model(embedding_initializer=self.load_glove_embeddings(word_index) if self.use_glove else None)
 
-        print('Y_train mean:', np.mean(Y_train))
-        print('Y_test mean:', np.mean(Y_test))
+        # ('Y_train mean:', np.mean(Y_train))
+        # print('Y_test mean:', np.mean(Y_test))
 
-        optimizer = Adam(0.01)
+        optimizer = Adam()
         callbacks = [
             keras.callbacks.EarlyStopping(
                 monitor='val_acc',
@@ -103,14 +103,15 @@ class Model:
 
         print('Loading embeddings.')
         embeddings_index = {}
+        embeddings_path = './data/glove.6B/glove.6B.'+str(self.embedding_size)+'d.txt'
 
-        if not pathlib.Path('glove.6B.300d.txt').exists():
+        if not pathlib.Path(embeddings_path).exists():
             raise FileNotFoundError(
                 'Download glove embeddings from http://nlp.stanford.edu/data/glove.6B.zip (822 MB file) and unzzip\n' +
                 'Linux command:\n\n\t wget http://nlp.stanford.edu/data/glove.6B.zip; unzip glove.6B.zip'
             )
 
-        f = open('glove.6B.300d.txt', encoding='utf-8')
+        f = open(embeddings_path, encoding='utf-8')
         for line in f:
             values = line.split()
             word = values[0]
