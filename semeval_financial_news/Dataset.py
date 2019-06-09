@@ -13,11 +13,11 @@ from sklearn.model_selection import train_test_split
 
 
 class Dataset():
-    def __init__(self, dataset_path, regression=False):
-        self.dataset = Dataset.preprocess(pd.read_json(dataset_path), regression)
+    def __init__(self, dataset_path, regression=False, ner=False):
+        self.dataset = Dataset.preprocess(pd.read_json(dataset_path), regression, ner=ner)
 
     @staticmethod
-    def preprocess(dataset, regression=False):
+    def preprocess(dataset, regression=False, ner=False):
         dataset_preproed = {'title': [], 'sentiment': []}
 
         # companies = set(dataset['company'])
@@ -27,7 +27,7 @@ class Dataset():
         # cnt = Counter()
 
         for index, row in dataset.iterrows():
-            new_title = Dataset.preprocess_title(row['title'], row['company'])
+            new_title = Dataset.preprocess_title(row['title'], row['company'], ner=ner)
             # new_title = Dataset.preprocess_title(row['title'].replace(row['company'], '<company>'))
             sentiment = row['sentiment'] if regression else (1 if row['sentiment'] >= 0 else 0)
             # cnt[sentiment] += 1
@@ -44,12 +44,13 @@ class Dataset():
         return dataset_preproed
 
     @staticmethod
-    def preprocess_title(title, company=None):
+    def preprocess_title(title, company=None, ner=False):
         lemmatizer = WordNetLemmatizer()
 
         # tokens = word_tokenize(title.lower())
         tokens = word_tokenize(title)
-        tokens = Dataset.ne_removal(tokens)
+        if ner:
+            tokens = Dataset.ne_removal(tokens)
 
         filtered_tokens = [lemmatizer.lemmatize(token.lower()) for token in tokens
                            if (token not in stopwords.words('english') and token not in punctuation)]
@@ -59,7 +60,6 @@ class Dataset():
             new_title += token + ' '
 
         new_title = new_title.replace(company.lower(), 'company')
-        new_title = new_title.replace('\'s', '')
         new_title.strip()
 
         return new_title
@@ -75,7 +75,7 @@ class Dataset():
             # new_tokens.append(leaf._label)
 
         regnumber = re.compile(r'\d+(?:,\d*)?')
-        new_tokens = ['' if regnumber.match(token) else token for token in new_tokens]
+        new_tokens = ['' if (regnumber.match(token) or token=='\'s') else token for token in new_tokens]
         return new_tokens
 
     def train_test_split(self, test_size=0.2):

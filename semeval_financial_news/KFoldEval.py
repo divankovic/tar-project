@@ -18,8 +18,12 @@ for train_index, test_index in k_fold.split(dataset.dataset['title']):
         test_index]
 
     model = Model(use_glove=True)
-    x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.15)
+    val_size = 0.1
+    x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=val_size)
     model.train(x_train, y_train, x_val, y_val, epochs=50)
-    model.load_model(path=str(model.log_dir)+'/best_model.hdf5', dict_path='./checkpoints/tokenizer.pickle')
+    if val_size > 0.0:
+        model.load_model(path=str(model.log_dir)+'/best_model.hdf5', dict_path='./checkpoints/tokenizer.pickle')
+    else:
+        model.load_model(path='./checkpoints/model', dict_path='./checkpoints/tokenizer.pickle')
 
     print(accuracy_score(y_true=y_test, y_pred=model.predict_classes(x_test)))

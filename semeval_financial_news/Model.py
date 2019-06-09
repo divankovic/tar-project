@@ -72,21 +72,23 @@ class Model:
         # print('Y_val mean:', np.mean(Y_val))
 
         optimizer = Adam()
-        callbacks = [
-            keras.callbacks.EarlyStopping(
-                monitor='val_acc',
-                mode='max',
-                verbose=1,
-                patience=15,
-            ),
-            keras.callbacks.ModelCheckpoint(
-                str(self.log_dir / 'best_model.hdf5'),
-                monitor='val_acc',
-                verbose=1,
-                save_best_only=True,
-                mode='max'
-            )
-        ]
+        callbacks = None
+        if len(X_val) > 0:
+            callbacks = [
+                keras.callbacks.EarlyStopping(
+                    monitor='val_acc',
+                    mode='max',
+                    verbose=1,
+                    patience=15,
+                ),
+                keras.callbacks.ModelCheckpoint(
+                    str(self.log_dir / 'best_model.hdf5'),
+                    monitor='val_acc',
+                    verbose=1,
+                    save_best_only=True,
+                    mode='max'
+                )
+            ]
 
         self.model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
         self.model.fit(X_train, Y_train, validation_data=(X_val, Y_val), batch_size=batch_size, epochs=epochs,
