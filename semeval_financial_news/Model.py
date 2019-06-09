@@ -97,7 +97,7 @@ class Model:
             handle.write(self.model.to_json())
 
         # scores = self.model.evaluate(X_test, Y_test, verbose=0)
-        print('Test accuracy:', scores[1])
+        # print('Test accuracy:', scores[1])
 
     def load_glove_embeddings(self, word_index):
 
@@ -141,11 +141,6 @@ class Model:
         X = self.tokenizer.texts_to_sequences(input)
         X = pad_sequences(X, maxlen=self.max_len, value=0)
         return self.model.predict(X)
-
-    def evaluate(self, X_test, Y_test):
-        X_test = self.tokenizer.texts_to_sequences(X_test)
-        X_test = pad_sequences(X_test, maxlen=self.max_len, value=0)
-        return self.model.evaluate(X_test, Y_test)
 
 
 def get_timestamp():
