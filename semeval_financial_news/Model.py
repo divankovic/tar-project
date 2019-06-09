@@ -49,7 +49,7 @@ class Model:
         self.model.add(Dense(32, activation='relu', kernel_regularizer=l2(0.001)))
         self.model.add(Dense(1, activation='sigmoid'))
 
-    def train(self, X_train, Y_train, X_test, Y_test, batch_size=32, epochs=10):
+    def train(self, X_train, Y_train, X_val, Y_val, batch_size=32, epochs=10):
         self.tokenizer.fit_on_texts(X_train)
 
         # pickle word dictionary for later use
@@ -57,19 +57,19 @@ class Model:
             pickle.dump(self.tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
         encoded_train_titles = self.tokenizer.texts_to_sequences(X_train)
-        encoded_test_titles = self.tokenizer.texts_to_sequences(X_test)
+        encoded_val_titles = self.tokenizer.texts_to_sequences(X_val)
 
         X_train = encoded_train_titles
-        X_test = encoded_test_titles
+        X_val = encoded_val_titles
 
         X_train = pad_sequences(X_train, maxlen=self.max_len, value=0)
-        X_test = pad_sequences(X_test, maxlen=self.max_len, value=0)
+        X_val = pad_sequences(X_val, maxlen=self.max_len, value=0)
 
         word_index = self.tokenizer.word_index
         self.build_model(embedding_initializer=self.load_glove_embeddings(word_index) if self.use_glove else None)
 
         # ('Y_train mean:', np.mean(Y_train))
-        # print('Y_test mean:', np.mean(Y_test))
+        # print('Y_val mean:', np.mean(Y_val))
 
         optimizer = Adam()
         callbacks = [
@@ -89,15 +89,15 @@ class Model:
         ]
 
         self.model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-        self.model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs,
+        self.model.fit(X_train, Y_train, validation_data=(X_val, Y_val), batch_size=batch_size, epochs=epochs,
                        callbacks=callbacks, verbose=0)
         self.model.save('./checkpoints/model')
 
         with (self.log_dir / 'arch.json').open('w') as handle:
             handle.write(self.model.to_json())
 
-        # scores = self.model.evaluate(X_test, Y_test, verbose=0)
-        # print('Test accuracy:', scores[1])
+        # scores = self.model.evaluate(X_val, Y_val, verbose=0)
+        # print('val accuracy:', scores[1])
 
     def load_glove_embeddings(self, word_index):
 
@@ -154,7 +154,7 @@ def get_timestamp():
 
 if __name__ == '__main__':
     dataset = Dataset('./data/headlines_train.json')
-    X_train, Y_train, X_test, Y_test = dataset.train_test_split()
+    X_train, Y_train, X_val, Y_val = dataset.train_val_split()
 
     model = Model(use_glove=True)
-    model.train(X_train, Y_train, X_test, Y_test, epochs=50)
+    model.train(X_train, Y_train, X_val, Y_val, epochs=50)

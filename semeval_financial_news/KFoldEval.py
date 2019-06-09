@@ -1,5 +1,6 @@
 from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
 import tflearn
 import numpy as np
 
@@ -17,7 +18,8 @@ for train_index, test_index in k_fold.split(dataset.dataset['title']):
         test_index]
 
     model = Model(use_glove=True)
-    model.train(x_train, y_train, x_test, y_test, epochs=50)
+    x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.15)
+    model.train(x_train, y_train, x_val, y_val, epochs=50)
     model.load_model(path=str(model.log_dir)+'/best_model.hdf5', dict_path='./checkpoints/tokenizer.pickle')
 
     print(accuracy_score(y_true=y_test, y_pred=model.predict_classes(x_test)))
