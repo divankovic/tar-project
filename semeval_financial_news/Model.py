@@ -27,7 +27,7 @@ class Model:
 
         self.model = None
         self.max_len = 15
-        self.embedding_size = 200
+        self.embedding_size = 300
         self.vocabulary_size = 10000
         self.tokenizer = Tokenizer(num_words=self.vocabulary_size)
 
@@ -41,7 +41,7 @@ class Model:
             input_dim=self.vocabulary_size,
             output_dim=self.embedding_size,
             input_length=self.max_len,
-            embeddings_initializer=embedding_initializer,
+            embeddings_initializer=embedding_initializer if embedding_initializer is not None else 'uniform',
             trainable=embedding_initializer is None
         ))
         self.model.add(LSTM(32, return_sequences=True, dropout=0.3, kernel_regularizer=l2(0.001)))

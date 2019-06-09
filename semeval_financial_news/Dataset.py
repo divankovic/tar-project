@@ -84,5 +84,6 @@ class Dataset():
         return X_train, y_train, X_test, y_test
 
 
-title = 'BP signs $12 billion energy deal in South East Asia'
-Dataset.preprocess_title(title, 'BP')
+if __name__ == '__main__':
+    title = 'BP signs $12 billion energy deal in South East Asia'
+    print(Dataset.preprocess_title(title, 'BP'))
