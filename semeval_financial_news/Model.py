@@ -90,13 +90,13 @@ class Model:
 
         self.model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
         self.model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs,
-                       callbacks=callbacks)
+                       callbacks=callbacks, verbose = 0)
         self.model.save('./checkpoints/model')
 
         with (self.log_dir / 'arch.json').open('w') as handle:
             handle.write(self.model.to_json())
 
-        scores = self.model.evaluate(X_test, Y_test, verbose=0)
+        # scores = self.model.evaluate(X_test, Y_test, verbose=0)
         print('Test accuracy:', scores[1])
 
     def load_glove_embeddings(self, word_index):
@@ -141,6 +141,11 @@ class Model:
         X = self.tokenizer.texts_to_sequences(input)
         X = pad_sequences(X, maxlen=self.max_len, value=0)
         return self.model.predict(X)
+
+    def evaluate(self, X_test, Y_test):
+        X_test = self.tokenizer.texts_to_sequences(X_test)
+        X_test = pad_sequences(X_test, maxlen=self.max_len, value=0)
+        return self.model.evaluate(X_test, Y_test)
 
 
 def get_timestamp():

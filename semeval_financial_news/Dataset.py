@@ -35,7 +35,7 @@ class Dataset():
             if len(word_tokenize(new_title)) < 2:
                 continue
 
-            print(new_title)
+            # print(new_title)
             dataset_preproed['title'].append(new_title)
             dataset_preproed['sentiment'].append(sentiment)
 
